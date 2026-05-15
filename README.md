@@ -6,7 +6,7 @@
 
 ## 1. Project Philosophy
 
-This project extends the LinHT/M17 open hardware approach to true dual-band VHF+UHF operation. No existing commodity RFIC adequately covers both 144 MHz and 430 MHz with sufficient IQ bandwidth, low noise, and a clean open digital interface suitable for an embedded Linux SDR platform. The solution is a purpose-designed RFIC, a system board architected from the ground up, and a custom splash-proof chassis — not constrained by any donor radio enclosure.
+No existing commodity RFIC adequately covers both 144 MHz and 430 MHz with sufficient IQ bandwidth, low noise, and a clean open digital interface suitable for an embedded Linux SDR platform. The solution is a purpose-designed RFIC, a system board architected from the ground up, and a custom splash-proof chassis — not constrained by any donor radio enclosure.
 
 ---
 

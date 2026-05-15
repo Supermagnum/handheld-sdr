@@ -1,6 +1,3 @@
-# handheld-sdr
-A preliminary idea for a dual band handheld sdr
-
 # Dual-Band Open SDR Handheld — System Design Specification
 **Codename: OpenHT-DB (Open Handheld Transceiver, Dual-Band)**
 *Draft v0.3*
@@ -619,7 +616,67 @@ flowchart TD
 
 ---
 
-## 10. Risk Register
+## 10. Authenticated Transmission via Hardware Security Key
+
+### 10.1 Concept
+
+The rear USB-A port is positioned to accept a hardware security token — NitroKey, YubiKey, or a device running the [Galdralag firmware](https://github.com/Supermagnum/Galdralag-firmware) — which sits flush against any surface the radio rests on, protected from accidental removal during operation.
+
+With a GnuPG-compatible OpenPGP smartcard token present, the iMX93 can cryptographically sign outgoing transmissions. The private key never leaves the hardware token. This enables authenticated remote control of SDR-equipped repeaters over RF, with no internet dependency — a receiving repeater verifies the signature against a known public key before acting on any control command embedded in the frame.
+
+### 10.2 Applicable Modes
+
+| Mode | Signing method | Notes |
+|---|---|---|
+| M17 | Detached GnuPG signature in LSF/superframe data field | Native data framing supports arbitrary payload |
+| APRS | Signed comment or object field | Signature fits within APRS comment length |
+| EchoLink | Signed control frame prepended to audio stream | Authentication before link establishment |
+| NFM voice | Short signed preamble burst before audio | ~0.5–0.8 s overhead; negligible on a voice QSO |
+| Any digital mode | Signed metadata packet on a separate data channel | Mode-dependent framing |
+
+The signature frame overhead is approximately 0.5–0.8 seconds of air time, which is negligible in practice — well within the normal pre-PTT courtesy pause.
+
+### 10.3 Software Stack
+
+```mermaid
+flowchart TD
+    TOKEN(["Hardware Token\nNitroKey · YubiKey\nGaldralag firmware\n(USB-A rear)"])
+    PCSCD["pcscd\nPC/SC smartcard daemon"]
+    GPGAGENT["gpg-agent\nOpenPGP smartcard interface"]
+    DAEMON["HT Daemon\ncomposes control frame\ncalls gpg --detach-sign"]
+    GNURADIO["GNU Radio TX Flowgraph\nframe → modulate → HT13G TX"]
+    RF(["RF transmission\nsigned frame on air"])
+
+    RX_RF(["Received frame\nat repeater or peer"])
+    RX_GNR["GNU Radio RX Flowgraph\ndemodulate → extract frame"]
+    RX_VERIFY["gpg --verify\nagainst known public key"]
+    RX_ACTION["Execute control command\nor reject if invalid"]
+
+    TOKEN --> PCSCD --> GPGAGENT --> DAEMON
+    DAEMON --> GNURADIO --> RF
+
+    RF -.->|"over air"| RX_RF
+    RX_RF --> RX_GNR --> RX_VERIFY --> RX_ACTION
+```
+
+Required additions to the Yocto image:
+
+- `pcscd` — PC/SC daemon; handles CCID USB device class (all three token types enumerate correctly via the USB hub)
+- `gnupg` — with smartcard support compiled in
+- `gpg-agent` — started at boot, socket available to daemon and user processes
+- `scdaemon` — smartcard backend for gpg-agent
+
+The iMX93 USB-A port is permanently in host mode; there is no conflict with the USB-C OTG port managed by the FUSB302.
+
+### 10.4 Repeater Authentication Model
+
+A network of SDR-equipped repeaters can each hold a keyring of trusted operator public keys. An operator transmitting a signed control frame — frequency change, power adjustment, link enable/disable, EchoLink node connection — is authenticated at the repeater by signature verification before any action is taken. An invalid or missing signature is silently ignored.
+
+This model requires no central server, no internet connection, and no proprietary protocol. It uses standard GnuPG tooling already available on Linux, and the Web of Trust model familiar to the amateur radio community through existing GnuPG key-signing practices.
+
+---
+
+## 11. Risk Register
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
@@ -635,4 +692,4 @@ flowchart TD
 
 ---
 
-*Draft v0.3. All specifications are design targets. RFIC electrical specs should be reviewed by an experienced RF IC designer before committing to tapeout. If you have relevant industry contacts, the HT13G chip spec (section 3) is intended as a complete enough brief to initiate a technical conversation.*
+*Draft v0.4. All specifications are design targets. RFIC electrical specs should be reviewed by an experienced RF IC designer before committing to tapeout. If you have relevant industry contacts, the HT13G chip spec (section 3) is intended as a complete enough brief to initiate a technical conversation.*

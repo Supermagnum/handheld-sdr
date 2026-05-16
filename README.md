@@ -672,7 +672,7 @@ The iMX93 USB-A port is permanently in host mode; there is no conflict with the 
 
 A network of SDR-equipped repeaters can each hold a keyring of trusted operator public keys. An operator transmitting a signed control frame — frequency change, power adjustment, link enable/disable, EchoLink node connection — is authenticated at the repeater by signature verification before any action is taken. An invalid or missing signature is silently ignored.
 
-This model requires no central server, no internet connection, and no proprietary protocol. It uses standard GnuPG tooling already available on Linux, and the Web of Trust model familiar to the amateur radio community through existing GnuPG key-signing practices.
+This model requires no central server, no internet connection, and no proprietary protocol. It uses standard GnuPG tooling already available on Linux, and the Web of Trust model through existing GnuPG key-signing practices.
 
 ---
 
